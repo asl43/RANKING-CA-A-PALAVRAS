@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caça-Palavras Multiplayer | Ranking Nacional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #1e3a8a;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        h1 { color: var(--primary); font-size: 1.8rem; }
+        h2 { color: var(--primary); margin-bottom: 15px; }
+        
+        .card {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        input, button, select {
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .grid {
+            display: grid;
+            gap: 4px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #f0f0f0;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+        
+        .cell:hover {
+            background: var(--accent);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .cell.selecting {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .cell.found {
+            background: var(--success);
+            color: white;
+        }
+        
+        .words-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .word {
+            padding: 10px 16px;
+            border-radius: 25px;
+            background: #f0f0f0;
+            font-weight: 600;
+        }
+        
+        .word.found {
+            background: var(--success);
+            color: white;
+            text-decoration: line-through;
+        }
+        
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .leaderboard-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .leaderboard-item:nth-child(1) {
+            background: rgba(255,193,7,0.2);
+            border-radius: 10px;
+            font-weight: 700;
+        }
+        
+        .stat-badge {
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-in-out;
+            z-index: 1000;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .hidden { display: none !important; }
+        
+        @media (max-width: 768px) {
+            header { flex-direction: column; text-align: center; }
+            h1 { font-size: 1.4rem; }
+            .form-grid { grid-template-columns: 1fr; }
+            .cell { width: 35px; height: 35px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Caça-Palavras Multiplayer</h1>
+            <div>
+                <span class="stat-badge" id="onlineCount">Carregando...</span>
+            </div>
+        </header>
+
+        <!-- Card de Login/Registro -->
+        <div class="card" id="loginCard">
+            <h2>📝 Entrar no Jogo</h2>
+            <form id="loginForm">
+                <div class="form-grid">
+                    <input type="text" id="nome" placeholder="Seu nome" required maxlength="30">
+                    <input type="text" id="cidade" placeholder="Cidade (opcional)" maxlength="50">
+                    <select id="estado">
+                        <option value="">Estado (opcional)</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="BA">Bahia</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="PR">Paraná</option>
+                        <!-- Adicione outros estados conforme necessário -->
+                    </select>
+                    <input type="email" id="email" placeholder="Email (opcional)">
+                </div>
+                <div class="btn-group">
+                    <button type="submit">✨ Entrar e Jogar</button>
+                    <button type="button" onclick="showGlobalRanking()">🏆 Ranking Global</button>
+                    <button type="button" onclick="showStats()">📊 Minhas Estatísticas</button>
+                </div>
+            </form>
+            <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                <span id="syncStatus">✅ Sistema pronto</span>
+            </div>
+        </div>
+
+        <!-- Card de Ranking -->
+        <div class="card">
+            <h2>🏆 Top 10 - Ranking Nacional</h2>
+            <div id="leaderboardStatus" style="color: #666; margin-bottom: 15px;">Carregando ranking...</div>
+            <ul id="leaderboardList" class="leaderboard-list"></ul>
+            <button onclick="loadLeaderboard()" style="width: 100%; margin-top: 15px;">🔄 Atualizar Ranking</button>
+        </div>
+
+        <!-- Card do Jogo -->
+        <div class="card hidden" id="gameCard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h2 id="gameTitle">🎮 Nível 1</h2>
+                    <div style="margin-top: 10px;">
+                        <span class="stat-badge">⭐ Pontos: <span id="scoreDisplay">0</span></span>
+                        <span class="stat-badge" style="margin-left: 10px;">⏱️ <span id="timeDisplay">0.00s</span></span>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button onclick="pauseGame()" id="pauseBtn">⏸️ Pausar</button>
+                    <button onclick="giveHint()">💡 Dica</button>
+                    <button onclick="selectLevel()">📋 Níveis</button>
+                </div>
+            </div>
+            
+            <div style="margin: 15px 0; background: #f0f0f0; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="progressBar" style="height: 100%; background: var(--success); width: 0%; transition: width 0.5s;"></div>
+            </div>
+
+            <div id="gridContainer"></div>
+            
+            <div>
+                <strong>📝 Palavras a Encontrar</strong>
+                <div id="wordsList" class="words-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============= CONFIGURAÇÃO =============
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxvZ_X_AdvpjZ4odJNzh5HqVeCaoVnszlv24E7d7HqbFfndh-r1oeNsQNeKdl07XmT/exec';
+
+        if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzxvZ_X_AdvpjZ4odJNzh5HqVeCaoVnszlv24E7d7HqbFfndh-r1oeNsQNeKdl07XmT/exec') {
+            console.error('⚠️ ATENÇÃO: Configure o APPS_SCRIPT_URL!');
+        }
+
+        // ============= VARIÁVEIS GLOBAIS =============
+        let currentPlayerId = null;
+        let currentSessionId = null;
+        let currentLevel = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let gameScore = 0;
+        let grid = [];
+        let placedWords = [];
+        let found = new Set();
+        let selection = null;
+        let isPaused = false;
+
+        // ============= NÍVEIS =============
+        const GAME_LEVELS = [
+            { title: 'Nível 1: Animais', size: 10, words: ['GATO', 'CACHORRO', 'LEAO', 'TIGRE', 'URSO', 'ZEBRA'] },
+            { title: 'Nível 2: Frutas', size: 12, words: ['BANANA', 'LARANJA', 'MORANGO', 'UVA', 'MELANCIA', 'ABACAXI'] },
+            { title: 'Nível 3: Cores', size: 14, words: ['AZUL', 'VERMELHO', 'VERDE', 'AMARELO', 'ROXO', 'LARANJA', 'ROSA'] }
+        ];
+
+        // ============= FUNÇÕES DE COMUNICAÇÃO =============
+        async function callGoogleSheets(action, data = {}) {
+            try {
+                setSyncStatus('syncing', 'Sincronizando...');
+                
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, timestamp: new Date().toISOString(), ...data })
+                });
+
+                const result = await response.json();
+                setSyncStatus('synced', 'Sincronizado ✓');
+                return result;
+            } catch (error) {
+                console.error('Erro:', error);
+                setSyncStatus('error', 'Erro de conexão');
+                return { success: false, error: error.message };
+            }
+        }
+
+        function setSyncStatus(status, text) {
+            const el = document.getElementById('syncStatus');
+            if (el) el.textContent = `${status === 'synced' ? '✅' : status === 'syncing' ? '⏳' : '⚠️'} ${text}`;
+        }
+
+        // ============= FUNÇÕES DE JOGADOR =============
+        async function registerPlayer(playerData) {
+            const result = await callGoogleSheets('registerPlayer', playerData);
+            if (result.success && result.playerId) {
+                currentPlayerId = result.playerId;
+                localStorage.setItem('player_id', result.playerId);
+                return result;
+            }
+            return result;
+        }
+
+        async function startGameSession(playerId, levelIndex) {
+            const result = await callGoogleSheets('startSession', {
+                playerId,
+                level: levelIndex,
+                levelName: GAME_LEVELS[levelIndex].title,
+                startTime: new Date().toISOString()
+            });
+            if (result.success && result.sessionId) {
+                currentSessionId = result.sessionId;
+            }
+            return result;
+        }
+
+        async function finishGameSession(sessionData) {
+            const result = await callGoogleSheets('finishSession', {
+                sessionId: currentSessionId,
+                playerId: currentPlayerId,
+                ...sessionData
+            });
+            if (result.success) {
+                currentSessionId = null;
+                setTimeout(() => loadLeaderboard(), 1000);
+            }
+            return result;
+        }
+
+        // ============= FUNÇÕES DE RANKING =============
+        async function loadLeaderboard() {
+            try {
+                document.getElementById('leaderboardStatus').textContent = '⏳ Carregando...';
+                const result = await callGoogleSheets('getLeaderboard', { limit: 10, level: currentLevel });
+                
+                if (result.success && result.leaderboard && result.leaderboard.length > 0) {
+                    document.getElementById('leaderboardStatus').textContent = `🏆 Top ${result.leaderboard.length} Jogadores`;
+                    document.getElementById('leaderboardList').innerHTML = result.leaderboard.map((player, index) => `
+                        <li class="leaderboard-item">
+                            <span>${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1 + 'º'} ${player.nome}</span>
+                            <span>
+                                <strong style="color: var(--accent)">${player.tempo}s</strong>
+                                <span style="margin-left: 15px; color: #f59e0b">${player.pontos || 0} pts</span>
+                            </span>
+                        </li>
+                    `).join('');
+                } else {
+                    document.getElementById('leaderboardStatus').textContent = '🎮 Seja o primeiro!';
+                    document.getElementById('leaderboardList').innerHTML = '<li class="leaderboard-item">Nenhum recorde ainda. Jogue e entre para o ranking!</li>';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar ranking:', error);
+            }
+        }
+
+        async function loadOnlinePlayerCount() {
+            try {
+                const result = await callGoogleSheets('getOnlineCount');
+                if (result.success) {
+                    const count = result.onlineCount || 0;
+                    document.getElementById('onlineCount').textContent = `🌍 ${count} online`;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar contagem:', error);
+            }
+        }
+
+        async function showGlobalRanking() {
+            const result = await callGoogleSheets('getGlobalRanking', { limit: 50 });
+            if (result.success && result.ranking) {
+                alert('Ranking Global:\n\n' + result.ranking.slice(0, 10).map((p, i) => 
+                    `${i+1}. ${p.nome} - ${p.totalScore} pts`
+                ).join('\n'));
+            }
+        }
+
+        function showStats() {
+            alert('Suas estatísticas serão exibidas aqui em breve!');
+        }
+
+        // ============= FUNÇÕES DO JOGO =============
+        function initGame(levelIndex) {
+            const level = GAME_LEVELS[levelIndex];
+            const size = level.size;
+            const words = level.words;
+
+            document.getElementById('gameTitle').textContent = level.title;
+            found.clear();
+            selection = null;
+            placedWords = [];
+            grid = Array.from({ length: size }, () => Array(size).fill(' '));
+
+            // Colocar palavras
+            words.forEach(word => placeWord(word.toUpperCase(), size));
+
+            // Preencher espaços vazios
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    if (grid[r][c] === ' ') {
+                        grid[r][c] = letters[Math.floor(Math.random() * letters.length)];
+                    }
+                }
+            }
+
+            renderGrid(size);
+            renderWords(words);
+            startTimer();
+        }
+
+        function placeWord(word, size) {
+            const directions = [[0,1], [1,0], [1,1], [-1,1]];
+            const len = word.length;
+            
+            for (let attempt = 0; attempt < 100; attempt++) {
+                const dir = directions[Math.floor(Math.random() * directions.length)];
+                const r = Math.floor(Math.random() * size);
+                const c = Math.floor(Math.random() * size);
+                const endR = r + dir[0] * (len - 1);
+                const endC = c + dir[1] * (len - 1);
+                
+                if (endR >= 0 && endR < size && endC >= 0 && endC < size) {
+                    let canPlace = true;
+                    for (let i = 0; i < len; i++) {
+                        const rr = r + dir[0] * i;
+                        const cc = c + dir[1] * i;
+                        if (grid[rr][cc] !== ' ' && grid[rr][cc] !== word[i]) {
+                            canPlace = false;
+                            break;
+                        }
+                    }
+                    
+                    if (canPlace) {
+                        for (let i = 0; i < len; i++) {
+                            grid[r + dir[0] * i][c + dir[1] * i] = word[i];
+                        }
+                        placedWords.push({ word, r, c, dr: dir[0], dc: dir[1], len });
+                        return;
+                    }
+                }
+            }
+        }
+
+        function renderGrid(size) {
+            const container = document.getElementById('gridContainer');
+            const gridEl = document.createElement('div');
+            gridEl.className = 'grid';
+            gridEl.style.gridTemplateColumns = `repeat(${size}, auto)`;
+
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = grid[r][c];
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    cell.onclick = () => onCellClick(r, c);
+                    gridEl.appendChild(cell);
+                }
+            }
+
+            container.innerHTML = '';
+            container.appendChild(gridEl);
+        }
+
+        function renderWords(words) {
+            const container = document.getElementById('wordsList');
+            container.innerHTML = words.map(w => 
+                `<div class="word" id="word_${w}">${w}</div>`
+            ).join('');
+        }
+
+        function onCellClick(r, c) {
+            if (isPaused) return;
+            
+            if (!selection) {
+                selection = { r1: r, c1: c };
+                document.querySelector(`[data-r="${r}"][data-c="${c}"]`).classList.add('selecting');
+            } else {
+                selection.r2 = r;
+                selection.c2 = c;
+                checkSelection();
+                document.querySelectorAll('.cell').forEach(el => el.classList.remove('selecting'));
+                selection = null;
+            }
+        }
+
+        function checkSelection() {
+            const { r1, c1, r2, c2 } = selection;
+            const dr = Math.sign(r2 - r1);
+            const dc = Math.sign(c2 - c1);
+            const len = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1)) + 1;
+
+            let word = '';
+            for (let i = 0; i < len; i++) {
+                word += grid[r1 + dr * i][c1 + dc * i];
+            }
+
+            const matched = placedWords.find(pw => 
+                (pw.word === word || pw.word === word.split('').reverse().join('')) && !found.has(pw.word)
+            );
+
+            if (matched) {
+                found.add(matched.word);
+                gameScore += 100;
+                document.getElementById('scoreDisplay').textContent = gameScore;
+                document.getElementById('word_' + matched.word).classList.add('found');
+                
+                for (let i = 0; i < matched.len; i++) {
+                    const cell = document.querySelector(`[data-r="${matched.r + matched.dr * i}"][data-c="${matched.c + matched.dc * i}"]`);
+                    if (cell) cell.classList.add('found');
+                }
+
+                showToast(`✅ Palavra encontrada: ${matched.word}`);
+                updateProgress();
+                checkWin();
+            }
+        }
+
+        function updateProgress() {
+            const progress = (found.size / placedWords.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        async function checkWin() {
+            if (found.size >= placedWords.length) {
+                stopTimer();
+                const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                showToast('🎉 Parabéns! Nível completo!');
+                
+                await finishGameSession({
+                    foundWords: found.size,
+                    totalWords: placedWords.length,
+                    timeTaken: parseFloat(timeTaken),
+                    score: gameScore,
+                    completed: true
+                });
+
+                setTimeout(() => {
+                    if (confirm('🎊 Nível completado! Ir para o próximo?')) {
+                        currentLevel = (currentLevel + 1) % GAME_LEVELS.length;
+                        gameScore = 0;
+                        initGame(currentLevel);
+                    }
+                }, 1500);
+            }
+        }
+
+        // ============= FUNÇÕES DE TIMER =============
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                    document.getElementById('timeDisplay').textContent = elapsed + 's';
+                }
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function pauseGame() {
+            isPaused = !isPaused;
+            document.getElementById('pauseBtn').textContent = isPaused ? '▶️ Continuar' : '⏸️ Pausar';
+            showToast(isPaused ? '⏸️ Jogo pausado' : '▶️ Jogo retomado');
+        }
+
+        function giveHint() {
+            const notFound = placedWords.filter(pw => !found.has(pw.word));
+            if (notFound.length === 0) return;
+            
+            const randomWord = notFound[Math.floor(Math.random() * notFound.length)];
+            const firstCell = document.querySelector(`[data-r="${randomWord.r}"][data-c="${randomWord.c}"]`);
+            
+            if (firstCell) {
+                firstCell.style.background = '#f59e0b';
+                firstCell.style.color = 'white';
+                setTimeout(() => {
+                    firstCell.style.background = '';
+                    firstCell.style.color = '';
+                }, 2000);
+                showToast(`💡 Procure por: ${randomWord.word}`);
+            }
+        }
+
+        function selectLevel() {
+            const levelIndex = prompt(`Escolha o nível (1-${GAME_LEVELS.length}):`);
+            if (levelIndex && levelIndex >= 1 && levelIndex <= GAME_LEVELS.length) {
+                currentLevel = parseInt(levelIndex) - 1;
+                gameScore = 0;
+                initGame(currentLevel);
+            }
+        }
+
+        // ============= FUNÇÕES AUXILIARES =============
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ============= EVENTOS =============
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const playerData = {
+                nome: document.getElementById('nome').value,
+                cidade: document.getElementById('cidade').value,
+                estado: document.getElementById('estado').value,
+                email: document.getElementById('email').value
+            };
+
+            const result = await registerPlayer(playerData);
+            
+            if (result.success) {
+                showToast('✅ Bem-vindo! Iniciando jogo...');
+                await startGameSession(currentPlayerId, currentLevel);
+                
+                document.getElementById('loginCard').classList.add('hidden');
+                document.getElementById('gameCard').classList.remove('hidden');
+                
+                initGame(currentLevel);
+            } else {
+                showToast('⚠️ Erro ao registrar. Tente novamente.');
+            }
+        });
+
+        // ============= INICIALIZAÇÃO =============
+        window.addEventListener('load', () => {
+            loadLeaderboard();
+            loadOnlinePlayerCount();
+            setInterval(loadOnlinePlayerCount, 30000);
+            setInterval(loadLeaderboard, 60000);
+        });
+    </script>
+</body>
+</html>
